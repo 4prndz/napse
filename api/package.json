@@ -1,0 +1,21 @@
+{
+  "name": "napse",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start:dev": "nodemon --env-file=.env.development src/index.js",
+    "docker:build": "docker build -t my-app/express-api:latest-dev .",
+    "docker:run": "docker run -p 1337:1337 -v ./:/user/src/app --name api my-app/express-api:latest-dev",
+    "docker:stop": "docker stop api"
+  },
+  "keywords": [],
+  "author": "4prndz",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^8.5.0",
+    "nodemon": "^3.0.1"
+  }
+}
