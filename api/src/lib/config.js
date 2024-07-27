@@ -5,6 +5,7 @@ export default {
   },
   routes: {
     default: true,
+    user: true
   },
   mongo: {
     protocol: process.env.MONGO_PROTOCOL,
