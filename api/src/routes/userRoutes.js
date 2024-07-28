@@ -22,7 +22,24 @@ export const userRoutes = (router) => {
   userRouter.post("/", async (req, res) => {
     UserService.create(req.body)
       .then((user) => res.status(200).json(user))
-      .catch((err) => res.status(500).json({ message: err.message }));
+      .catch((err) => {
+        if (err.code === 11000) {
+          res.status(400).json({
+            message: `User with ${err.keyValue.email} already exists`,
+          });
+          return;
+        }
+
+        if (err.name === "ValidationError") {
+          const message = Object.values(err, errors).map((e) => e.message);
+          res.status(400).json({
+            message: message.join(", "),
+          });
+          return;
+        }
+
+        return res.status(500).json({ message: err.message });
+      });
   });
 
   userRouter.put("/:_id", async (req, res) => {

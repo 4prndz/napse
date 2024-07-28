@@ -1,17 +1,56 @@
 import mongoose from "mongoose";
+import validate from "validate.js";
 
 const { Schema } = mongoose;
 
+const constraints = {
+  name: () => {
+    const regex = "[-'A-Za-z ]+";
+    const constraints = {
+      presence: { allowEmpty: false },
+      type: "string",
+      format: {
+        pattern: regex,
+        flags: "i",
+      },
+    };
+    return constraints;
+  },
+  email: () => ({
+    presence: { allowEmpty: false },
+    email: true,
+  }),
+};
+
 const UserSchema = new Schema({
   name: {
-    type: Object,
-    default: {
-      first: String,
-      last: String,
+    first: {
+      type: String,
+      required: true,
+      validate: {
+        validator: (name) => !validate.single(name, constraints.name),
+        message: (props) => `${props.value} is not a valid first name`,
+      },
+    },
+    last: {
+      type: String,
+      required: true,
+      validate: {
+        validator: (name) => !validate.single(name, constraints.name),
+        message: (props) => `${props.value} is not a valid last name`,
+      },
     },
   },
 
-  email: String,
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    validate: {
+      validator: (email) => !validate.single(email, constraints.email()),
+      message: (props) => `${props.value} is not a valid email address!`,
+    },
+  },
   created: Number,
   updated: Number,
   active: Boolean,
