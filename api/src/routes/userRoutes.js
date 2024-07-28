@@ -1,5 +1,7 @@
 import express from "express";
+import mongoose from "mongoose";
 import { UserService } from "../services/user/UserService.js";
+import { PayloadError, InternalError } from "../errors/Errors.js";
 
 const userRouter = express.Router();
 
@@ -7,15 +9,19 @@ export const userRoutes = (router) => {
   router.use("/user", userRouter);
 
   userRouter.get("/:_id", async (req, res) => {
-    console.log(`Hitting the GET user endpoint`);
-
     const id = req.params._id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json(new PayloadError(`_id`, "Invalid userId", "user"));
+      return;
+    }
+
     UserService.get(id)
-      .then((user) => res.status(200).json(user))
+      .then((user) => {
+        res.status(200).json(user);
+      })
       .catch((err) =>
-        res.status(500).json({
-          message: err.message,
-        }),
+        res.status(500).json(new InternalError("Failed to get user", "user")),
       );
   });
 
@@ -23,22 +29,26 @@ export const userRoutes = (router) => {
     UserService.create(req.body)
       .then((user) => res.status(200).json(user))
       .catch((err) => {
+        const service = "user";
+        // Error code 400
         if (err.code === 11000) {
-          res.status(400).json({
-            message: `User with ${err.keyValue.email} already exists`,
-          });
+          const msg = [`User with ${err.keyValue.email} already exists`];
+          const key = Object.keys(err.keyPattern)[0] || "email";
+          res.status(400).json(new PayloadError(key, msg, service));
           return;
         }
 
+        // Error Validation Errors
         if (err.name === "ValidationError") {
-          const message = Object.values(err, errors).map((e) => e.message);
-          res.status(400).json({
-            message: message.join(", "),
-          });
+          const msg = Object.values(err.errors).map((e) => e.message);
+          const key = Object.keys(err.errors);
+          res.status(400).json(new PayloadError(key, msg, service));
           return;
         }
 
-        return res.status(500).json({ message: err.message });
+        return res
+          .status(500)
+          .json(new InternalError(`Failed to create a user`, "internal"));
       });
   });
 
@@ -46,14 +56,28 @@ export const userRoutes = (router) => {
     const id = req.params._id;
     const data = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json(new PayloadError(`_id`, "Invalid userId", "user"));
+      return;
+    }
+
     UserService.update(id, data)
       .then((user) => res.status(200).json(user))
-      .catch((err) => res.status(500).json({ message: err.message }));
-    res.status(200);
+      .catch((err) =>
+        res
+          .status(500)
+          .json(new InternalError("Failed to update user", "user")),
+      );
   });
 
   userRouter.delete("/:_id", (req, res) => {
     const id = req.params._id;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      res.status(400).json(new PayloadError(`_id`, "Invalid userId", "user"));
+      return;
+    }
+
     UserService.delete(id)
       .then((user) => {
         if (user) {
@@ -66,7 +90,10 @@ export const userRoutes = (router) => {
           });
         }
       })
-      .catch((err) => res.status(500).json({ message: err.message }));
-    res.status(200);
+      .catch((err) =>
+        res
+          .status(500)
+          .json(new InternalError("Failed to delete user", "user")),
+      );
   });
 };
